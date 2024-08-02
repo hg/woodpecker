@@ -32,3 +32,7 @@ func (s storage) LogDelete(step *model.Step) error {
 	_, err := s.engine.Where("step_id = ?", step.ID).Delete(new(model.LogEntry))
 	return err
 }
+
+func (s storage) LogFinish(_ *model.Step) error {
+	return nil
+}

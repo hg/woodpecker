@@ -15,6 +15,7 @@
 package datastore
 
 import (
+	"github.com/rs/zerolog/log"
 	"xorm.io/builder"
 	"xorm.io/xorm"
 
@@ -79,6 +80,11 @@ func (s storage) stepCreate(sess *xorm.Session, steps []*model.Step) error {
 }
 
 func (s storage) StepUpdate(step *model.Step) error {
+	if step.Finished != 0 {
+		if err := s.LogFinish(step); err != nil {
+			log.Error().Err(err).Msg("failed to finalize step logs")
+		}
+	}
 	_, err := s.engine.ID(step.ID).AllCols().Update(step)
 	return err
 }
