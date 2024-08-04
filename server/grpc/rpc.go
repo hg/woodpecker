@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -39,6 +40,11 @@ import (
 	"go.woodpecker-ci.org/woodpecker/v2/server/store"
 )
 
+type rpcSteps struct {
+	sync.RWMutex
+	ids map[string]int64
+}
+
 type RPC struct {
 	queue         queue.Queue
 	pubsub        *pubsub.Publisher
@@ -46,6 +52,7 @@ type RPC struct {
 	store         store.Store
 	pipelineTime  *prometheus.GaugeVec
 	pipelineCount *prometheus.CounterVec
+	steps         *rpcSteps
 }
 
 // Next blocks until it provides the next workflow to execute.
@@ -336,14 +343,35 @@ func (s *RPC) Done(c context.Context, strWorkflowID string, state rpc.WorkflowSt
 }
 
 // Log writes a log entry to the database and publishes it to the pubsub.
+func (s *RPC) getStepId(stepUUID string) (int64, error) {
+	s.steps.RLock()
+	id, ok := s.steps.ids[stepUUID]
+	s.steps.RUnlock()
+
+	if ok {
+		return id, nil
+	}
+
+	step, err := s.store.StepByUUID(stepUUID)
+	if err != nil {
+		return 0, err
+	}
+
+	s.steps.Lock()
+	s.steps.ids[stepUUID] = step.ID
+	s.steps.Unlock()
+
+	return step.ID, nil
+}
+
 func (s *RPC) Log(c context.Context, rpcLogEntry *rpc.LogEntry) error {
 	// convert rpc log_entry to model.log_entry
-	step, err := s.store.StepByUUID(rpcLogEntry.StepUUID)
+	stepID, err := s.getStepId(rpcLogEntry.StepUUID)
 	if err != nil {
 		return fmt.Errorf("could not find step with uuid %s in store: %w", rpcLogEntry.StepUUID, err)
 	}
 	logEntry := &model.LogEntry{
-		StepID: step.ID,
+		StepID: stepID,
 		Time:   rpcLogEntry.Time,
 		Line:   rpcLogEntry.Line,
 		Data:   rpcLogEntry.Data,

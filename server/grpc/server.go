@@ -17,11 +17,9 @@ package grpc
 import (
 	"context"
 	"encoding/json"
-	"github.com/rs/zerolog/log"
-
 	"github.com/prometheus/client_golang/prometheus"
 	prometheus_auto "github.com/prometheus/client_golang/prometheus/promauto"
-
+	"github.com/rs/zerolog/log"
 	"go.woodpecker-ci.org/woodpecker/v2/pipeline/rpc"
 	"go.woodpecker-ci.org/woodpecker/v2/pipeline/rpc/proto"
 	"go.woodpecker-ci.org/woodpecker/v2/server/logging"
@@ -55,6 +53,9 @@ func NewWoodpeckerServer(queue queue.Queue, logger logging.Log, pubsub *pubsub.P
 		logger:        logger,
 		pipelineTime:  pipelineTime,
 		pipelineCount: pipelineCount,
+		steps: &rpcSteps{
+			ids: make(map[string]int64),
+		},
 	}
 	return &WoodpeckerServer{peer: peer}
 }
