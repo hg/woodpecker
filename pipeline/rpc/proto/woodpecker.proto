@@ -32,6 +32,7 @@ service Woodpecker {
   rpc Extend          (ExtendRequest)        returns (Empty) {}
   rpc Update          (UpdateRequest)        returns (Empty) {}
   rpc Log             (LogRequest)           returns (Empty) {}
+  rpc LogBatched      (BatchedLogRequest)    returns (Empty) {}
   rpc RegisterAgent   (RegisterAgentRequest) returns (RegisterAgentResponse) {}
   rpc UnregisterAgent (Empty)                returns (Empty) {}
   rpc ReportHealth    (ReportHealthRequest)  returns (Empty) {}
@@ -107,6 +108,10 @@ message UpdateRequest {
 
 message LogRequest {
   LogEntry logEntry = 1;
+}
+
+message BatchedLogRequest {
+  repeated LogEntry logEntry = 1;
 }
 
 message Empty {
