@@ -364,6 +364,15 @@ func (s *RPC) getStepId(stepUUID string) (int64, error) {
 	return step.ID, nil
 }
 
+func (s *RPC) UpdateLastActive(c context.Context) error {
+	agent, err := s.getAgentFromContext(c)
+	if err != nil {
+		return err
+	}
+	agent.LastWork = time.Now().Unix()
+	return s.store.AgentUpdate(agent)
+}
+
 func (s *RPC) Log(c context.Context, rpcLogEntry *rpc.LogEntry) error {
 	// convert rpc log_entry to model.log_entry
 	stepID, err := s.getStepId(rpcLogEntry.StepUUID)
@@ -385,16 +394,6 @@ func (s *RPC) Log(c context.Context, rpcLogEntry *rpc.LogEntry) error {
 			log.Error().Err(err).Msgf("rpc server could not write to logger")
 		}
 	}()
-
-	// TODO: update once
-	//agent, err := s.getAgentFromContext(c)
-	//if err != nil {
-	//	return err
-	//}
-	//agent.LastWork = time.Now().Unix()
-	//if err := s.store.AgentUpdate(agent); err != nil {
-	//	return err
-	//}
 
 	return server.Config.Services.LogStore.LogAppend(logEntry)
 }

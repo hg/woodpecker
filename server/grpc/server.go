@@ -148,10 +148,16 @@ func (s *WoodpeckerServer) logOne(c context.Context, ent *proto.LogEntry) error 
 func (s *WoodpeckerServer) Log(c context.Context, req *proto.LogRequest) (*proto.Empty, error) {
 	res := new(proto.Empty)
 	ent := req.GetLogEntry()
+	if err := s.peer.UpdateLastActive(c); err != nil {
+		log.Err(err).Msg("could not update last active time")
+	}
 	return res, s.logOne(c, ent)
 }
 
 func (s *WoodpeckerServer) LogBatched(c context.Context, req *proto.BatchedLogRequest) (*proto.Empty, error) {
+	if err := s.peer.UpdateLastActive(c); err != nil {
+		log.Err(err).Msg("could not update last active time")
+	}
 	for _, ent := range req.GetLogEntry() {
 		if err := s.logOne(c, ent); err != nil {
 			log.Err(err).Msg("error writing log entry")
